@@ -1,0 +1,73 @@
+clc, clear all, close all
+digitDatasetPath = fullfile(matlabroot,"toolbox","nnet","nndemos", ...
+    "nndatasets","DigitDataset");
+imds = imageDatastore(digitDatasetPath, ...
+    'IncludeSubfolders',true,'LabelSource',"foldernames");
+img = readimage(imds,1);
+s = size(img);
+% numTrainFiles = 750;
+
+% [imdsTrain,imdsValidation, imdsTest] = splitEachLabel(imds,0.6,0.2,0.2);
+
+
+numTrainingFiles = 750;
+[imdsTrain,imdsValidation] = splitEachLabel(imds,numTrainingFiles,'randomize');
+[imdsTrain1,imdsTest] = splitEachLabel(imds,numTrainingFiles,'randomize');
+
+ layers1 = [
+ imageInputLayer([28 28 1])
+
+ convolution2dLayer(3,8,"Padding","same")
+ batchNormalizationLayer
+ reluLayer
+
+ maxPooling2dLayer(2,"Stride",2)
+
+ convolution2dLayer(3,16,"Padding","same")
+ batchNormalizationLayer
+ reluLayer
+
+ maxPooling2dLayer(2,"Stride",2)
+
+ convolution2dLayer(3,32,"Padding","same")
+ batchNormalizationLayer
+ reluLayer
+
+ fullyConnectedLayer(10)
+ softmaxLayer
+ classificationLayer];
+
+
+
+options = trainingOptions('sgdm', ...
+    'InitialLearnRate',0.01, ...
+    'MaxEpochs',4, ...
+    'Shuffle','every-epoch', ... 
+    'ValidationData',imdsValidation, ...
+    'ValidationFrequency',30, ...
+    'Verbose',false, ...
+    'Plots','training-progress');
+
+net = trainNetwork(imdsTrain,layers1,options);
+
+
+[Ypredicted,probs] = classify(net,imdsTest);
+cnnAccuracy = sum(Ypredicted==imdsTest.Labels)/numel(imdsTest.Labels)*100
+figure("Units","normalized","Position",[0.2 0.2 1.5 1.5]);
+confusionchart(imdsTest.Labels,Ypredicted, ...
+    "Title","Handwriting recognition", ...
+    "ColumnSummary","column-normalized","RowSummary","row-normalized");
+
+
+
+
+
+
+    close all, clear all, clc
+path_test = 'C:\Users\User\Downloads\MNIST_dataset-main\MNIST_dataset-main\mnist\test';
+path_train = 'C:\Users\User\Downloads\MNIST_dataset-main\MNIST_dataset-main\mnist\train';
+digitDatasetPath_train = fullfile(path_train);
+
+imds_train = imageDatastore(digitDatasetPath_train, ...
+    'IncludeSubfolders',true,'LabelSource','foldernames');
+tbl_train = countEachLabel(imds_train);
